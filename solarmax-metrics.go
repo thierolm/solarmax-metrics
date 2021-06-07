@@ -54,8 +54,8 @@ func (s *SolarMax) execCmd(cmd string) (string, error) {
 	// Open connection to SolarMax inverter
 	conn, err := net.DialTimeout("tcp", s.uri, 5*time.Second)
 	if err != nil {
-		return "{01;FB;78|64:KDY=2E;KMT=62;KYR=699;KT0=B256;TNF=1388;TKK=20;PAC=10A;PRL=2;IL1=3A;IDC=31;UL1=908;UDC=D12;SYS=4E28,0|1C86}", nil
-		// return "", err
+		// return "{01;FB;78|64:KDY=2E;KMT=62;KYR=699;KT0=B256;TNF=1388;TKK=20;PAC=10A;PRL=2;IL1=3A;IDC=31;UL1=908;UDC=D12;SYS=4E28,0|1C86}", nil
+		return "", err
 	}
 	defer conn.Close()
 	conn.SetDeadline(time.Now().Add(5 * time.Second))
