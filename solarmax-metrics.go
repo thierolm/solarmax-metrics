@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"math"
 	"net"
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // SolarMax inverter implementation
@@ -25,6 +26,8 @@ func main() {
 	invId := flag.Int("inverter", 1, "inverter id")
 	metrics := flag.String("metrics", "KDY,KMT,KYR,KT0,TNF,TKK,PAC,PRL,IL1,IDC,UL1,UDC,SYS", "list of metric codes (comma separated)")
 	flag.Parse()
+
+	log.SetLevel(log.DebugLevel)
 
 	s := &SolarMax{
 		uri: net.JoinHostPort(*host, fmt.Sprintf("%d", *port)),
@@ -41,14 +44,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Printf("JSON: %s\n", resj)
-
 	fmt.Println(resj)
 }
 
 // execCmd executes an SolarMax command and provides the response
 func (s *SolarMax) execCmd(cmd string) (string, error) {
-	log.Printf("send: %s", cmd)
+	log.Debugf("send: %s", cmd)
 	buf := bytes.NewBuffer([]byte(cmd))
 
 	// Open connection to SolarMax inverter
@@ -66,7 +67,6 @@ func (s *SolarMax) execCmd(cmd string) (string, error) {
 	}
 
 	// Read response
-	log.Printf("read: %s", cmd)
 	resp := make([]byte, 8192)
 	len, err := conn.Read(resp)
 	if err != nil {
@@ -77,7 +77,7 @@ func (s *SolarMax) execCmd(cmd string) (string, error) {
 	for i := 0; i < len; i++ {
 		_ = buf.WriteByte(resp[i])
 	}
-	log.Printf("recv: %s\n", buf.String())
+	log.Debugf("recv: %s\n", buf.String())
 
 	return buf.String(), nil
 }
@@ -93,7 +93,7 @@ func smQuery(metrics string, inverter int) string {
 		if metricDesc[metricLst[i]] != "" {
 			cmdLst = append(cmdLst, metricLst[i])
 		} else {
-			log.Printf("unknown metric: <%s>\n", metricLst[i])
+			log.Warnf("unknown metric: <%s>\n", metricLst[i])
 		}
 	}
 
@@ -123,7 +123,7 @@ func smDecode(raw string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	log.Printf("inverter id: %02d\n", inv)
+	log.Debugf("inverter id: %02d\n", inv)
 
 	data := strings.Split(raw, "|")[1]
 	adata := strings.Split(strings.Split(data, ":")[1], ";")
@@ -185,14 +185,13 @@ func smDecode(raw string) (string, error) {
 			mdata[key] = float64(valint) / 100
 		}
 		keydesc := smMetricDesc()
-		log.Printf("%d. %s value: %v", i+1, key+"-"+keydesc[key], mdata[key])
+		log.Tracef("%d. %s value: %v", i+1, key+"-"+keydesc[key], mdata[key])
 
 	}
 	// Marshal sData into a JSON string.
 	sData, err := json.Marshal(mdata)
 	if err != nil {
-		fmt.Println(err.Error())
-		return "", err
+		return "{}", err
 	}
 
 	return string(sData), err
