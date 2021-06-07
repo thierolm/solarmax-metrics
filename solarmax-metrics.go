@@ -27,6 +27,10 @@ func main() {
 	metrics := flag.String("metrics", "KDY,KMT,KYR,KT0,TNF,TKK,PAC,PRL,IL1,IDC,UL1,UDC,SYS", "list of metric codes (comma separated)")
 	flag.Parse()
 
+	log.SetFormatter(&log.TextFormatter{
+		DisableColors: false,
+		FullTimestamp: true,
+	})
 	log.SetLevel(log.DebugLevel)
 
 	s := &SolarMax{
