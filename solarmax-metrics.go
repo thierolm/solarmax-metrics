@@ -50,11 +50,7 @@ func main() {
 		log.SetLevel(log.InfoLevel)
 	}
 
-	res, err := s.execCmd(smQuery(*metrics, *inverter))
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
+	res := s.execCmd(smQuery(*metrics, *inverter))
 
 	resj, err := smDecode(res)
 	if err != nil {
@@ -65,7 +61,7 @@ func main() {
 }
 
 // execCmd executes an SolarMax command and provides the response
-func (s *SolarMax) execCmd(cmd string) (string, error) {
+func (s *SolarMax) execCmd(cmd string) string {
 	log.Debugf("send: %s", cmd)
 	buf := bytes.NewBuffer([]byte(cmd))
 
@@ -73,21 +69,21 @@ func (s *SolarMax) execCmd(cmd string) (string, error) {
 	conn, err := net.DialTimeout("tcp", s.uri, 5*time.Second)
 	if err != nil {
 		// return "{01;FB;78|64:KDY=2E;KMT=62;KYR=699;KT0=B256;TNF=1388;TKK=20;PAC=10A;PRL=2;IL1=3A;IDC=31;UL1=908;UDC=D12;SYS=4E28,0|1C86}", nil
-		return "", err
+		return "{01;FB;00|64:SYS=752F|0000}"
 	}
 	defer conn.Close()
 	conn.SetDeadline(time.Now().Add(5 * time.Second))
 
 	// Send command
 	if _, err = buf.WriteTo(conn); err != nil {
-		return "", err
+		return "{01;FB;00|64:SYS=752E|0000}"
 	}
 
 	// Read response
 	resp := make([]byte, 8192)
 	len, err := conn.Read(resp)
 	if err != nil {
-		return "", err
+		return "{01;FB;00|64:SYS=752D|0000}"
 	}
 
 	// Create response message
@@ -96,7 +92,7 @@ func (s *SolarMax) execCmd(cmd string) (string, error) {
 	}
 	log.Debugf("recv: %s\n", buf.String())
 
-	return buf.String(), nil
+	return buf.String()
 }
 
 func smQuery(metrics string, inverter int) string {
@@ -164,10 +160,6 @@ func smDecode(raw string) (string, error) {
 		if key == "SYS" {
 			mdata[key] = fmt.Sprintf("%03d-", valint-20000) + statusdesc[valint]
 		}
-		// Solarmax unit timestamp
-		if key == "FDAT" {
-			mdata[key] = time.Unix(valint, 0)
-		}
 		// power of frequency reading, then  divide by 2...for some reason
 		valdiv2 := map[string]bool{
 			"PAC": true,
@@ -209,8 +201,10 @@ func smDecode(raw string) (string, error) {
 		log.Tracef("%d. %s value: %v", i+1, key+"-"+keydesc[key], mdata[key])
 
 		// stop decode loop when current key = next key (filled up to get a multiple of 4)
-		if nextkey := strings.Split(adata[i+1], "=")[0]; key == nextkey {
-			break
+		if i+1 < len(adata) {
+			if nextkey := strings.Split(adata[i+1], "=")[0]; key == nextkey {
+				break
+			}
 		}
 
 	}
@@ -276,7 +270,7 @@ func smMetricDesc() map[string]string {
 		"PRL":    "Relative power (%)",
 		"SAL":    "System Alarms",
 		"SDAT":   "datetime ?",
-		"SE1":    "",
+		"SE1":    "", // Response delivers only value but no key and will be ignored
 		"SWV":    "Software Version",
 		"SYS":    "System Status",
 		"THR":    "Time hours",
@@ -415,6 +409,11 @@ func smStatus() map[int64]string {
 		20198: "Device error 198",
 		20199: "Device error 199",
 		20999: "Device error 999",
+
+		// Custom errors to handle go errors
+		29997: "Inverter response read error",
+		29998: "Inverter network send timeout",
+		29999: "Inverter network i/o timeout",
 	}
 
 	return statusdesc
