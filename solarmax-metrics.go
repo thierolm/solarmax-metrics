@@ -21,6 +21,14 @@ type SolarMax struct {
 	inverter int
 }
 
+type smMetricJson []struct {
+	Metric     string
+	Properties struct {
+		Value       interface{}
+		Description string
+	}
+}
+
 func main() {
 
 	mode := flag.String("mode", "query", "query, loop, listmetrics")
@@ -58,13 +66,11 @@ func main() {
 	case "listmetrics":
 		listMetrics()
 	case "query":
-		{
-			resj, err := smDecode(s.execCmd(smQuery(*metrics, *inverter)))
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Println(resj)
+		resj, err := smDecode(s.execCmd(smQuery(*metrics, *inverter)))
+		if err != nil {
+			log.Fatal(err)
 		}
+		fmt.Println(resj)
 	case "loop":
 		log.Warnf("Mode %s will be implemeted soon", m)
 	default:
@@ -80,8 +86,8 @@ func (s *SolarMax) execCmd(cmd string) string {
 	// Open connection to SolarMax inverter
 	conn, err := net.DialTimeout("tcp", s.uri, 5*time.Second)
 	if err != nil {
-		// return "{01;FB;78|64:KDY=2E;KMT=62;KYR=699;KT0=B256;TNF=1388;TKK=20;PAC=10A;PRL=2;IL1=3A;IDC=31;UL1=908;UDC=D12;SYS=4E28,0|1C86}", nil
-		return "{01;FB;00|64:SYS=752F|0000}"
+		return "{01;FB;78|64:KDY=2E;KMT=62;KYR=699;KT0=B256;TNF=1388;TKK=20;PAC=10A;PRL=2;IL1=3A;IDC=31;UL1=908;UDC=D12;SYS=4E28,0|1C86}"
+		// return "{01;FB;00|64:SYS=752F|0000}"
 	}
 	defer conn.Close()
 	conn.SetDeadline(time.Now().Add(5 * time.Second))
@@ -153,7 +159,42 @@ func smDecode(raw string) (string, error) {
 	data := strings.Split(raw, "|")[1]
 	adata := strings.Split(strings.Split(data, ":")[1], ";")
 
-	mdata := make(map[string]interface{})
+	// jdata provides metric elements
+	jdata := make(smMetricJson, len(adata))
+	// edata provides metric elements (value, decription)
+	metricdesc := smMetricDesc()
+	statusdesc := smStatus()
+	alarmdesc := smAlarm()
+	typedesc := smType()
+
+	// power of frequency reading, then  divide by 2...for some reason
+	valdiv2 := map[string]bool{
+		"PAC": true,
+		"PDC": true,
+	}
+	// voltage reading or frequency, divide by 10 to get Volts
+	// same for "energy today"
+	valdiv10 := map[string]bool{
+		"UL1":  true,
+		"UL2":  true,
+		"UL3":  true,
+		"KDY":  true,
+		"UD01": true,
+		"UD02": true,
+		"UD03": true,
+	}
+	// current readings or frequency, divide by 100 to get Amps
+	valdiv100 := map[string]bool{
+		"IL1":  true,
+		"IL2":  true,
+		"IL3":  true,
+		"IDC":  true,
+		"TNF":  true,
+		"ID01": true,
+		"ID02": true,
+		"ID03": true,
+	}
+
 	// increment map's value for every key from slice
 	for i := 0; i < len(adata); i++ {
 		keyval := strings.Split(adata[i], "=")
@@ -163,61 +204,32 @@ func smDecode(raw string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		// Default int 16 mapping of SolarMax response values
-		mdata[key] = valint
 
+		jdata[i].Metric = key
 		// metric type dependend conversions and description lookups
-		statusdesc := smStatus()
-		if key == "SYS" {
-			mdata[key] = fmt.Sprintf("%03d-", valint-20000) + statusdesc[valint]
-		}
-		alarmdesc := smAlarm()
-		if key == "SAL" {
-			mdata[key] = fmt.Sprintf("%d-", valint) + alarmdesc[valint]
-		}
-		typedesc := smType()
-		if key == "TYP" {
-			mdata[key] = fmt.Sprintf("%d-", valint) + typedesc[valint]
-		}
-		// power of frequency reading, then  divide by 2...for some reason
-		valdiv2 := map[string]bool{
-			"PAC": true,
-			"PDC": true,
-		}
-		if valdiv2[key] {
-			mdata[key] = float64(valint) / 2
-		}
-		// voltage reading or frequency, divide by 10 to get Volts
-		// same for "energy today"
-		valdiv10 := map[string]bool{
-			"UL1":  true,
-			"UL2":  true,
-			"UL3":  true,
-			"KDY":  true,
-			"UD01": true,
-			"UD02": true,
-			"UD03": true,
-		}
-		if valdiv10[key] {
-			mdata[key] = float64(valint) / 10
+		switch key {
+		case "SYS":
+			jdata[i].Properties.Description = statusdesc[valint]
+		case "SAL":
+			jdata[i].Properties.Description = alarmdesc[valint]
+		case "TYP":
+			jdata[i].Properties.Description = typedesc[valint]
+		default:
+			jdata[i].Properties.Description = metricdesc[key]
 		}
 
-		// current readings or frequency, divide by 100 to get Amps
-		valdiv100 := map[string]bool{
-			"IL1":  true,
-			"IL2":  true,
-			"IL3":  true,
-			"IDC":  true,
-			"TNF":  true,
-			"ID01": true,
-			"ID02": true,
-			"ID03": true,
+		// Default int 16 mapping of SolarMax response values
+		jdata[i].Properties.Value = valint
+		switch {
+		case valdiv2[key]:
+			jdata[i].Properties.Value = float64(valint) / 2
+		case valdiv10[key]:
+			jdata[i].Properties.Value = float64(valint) / 10
+		case valdiv100[key]:
+			jdata[i].Properties.Value = float64(valint) / 100
 		}
-		if valdiv100[key] {
-			mdata[key] = float64(valint) / 100
-		}
-		keydesc := smMetricDesc()
-		log.Tracef("%d. %s value: %v", i+1, key+"-"+keydesc[key], mdata[key])
+
+		log.Tracef("%d. %s value: %v", i+1, key+"-"+metricdesc[key], jdata[i])
 
 		// stop decode loop when current key = next key (filled up to get a multiple of 4)
 		if i+1 < len(adata) {
@@ -228,7 +240,7 @@ func smDecode(raw string) (string, error) {
 
 	}
 	// Marshal sData into a JSON string.
-	sData, err := json.Marshal(mdata)
+	sData, err := json.Marshal(jdata)
 	if err != nil {
 		return "{}", err
 	}
