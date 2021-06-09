@@ -16,28 +16,41 @@ import (
 
 // SolarMax inverter implementation
 type SolarMax struct {
-	uri string
+	uri      string
+	inverter int
 }
 
 func main() {
 
 	host := flag.String("host", "127.0.0.1", "host/inverter ip address")
 	port := flag.Int("port", 80, "port number")
-	invId := flag.Int("inverter", 1, "inverter id")
+	inverter := flag.Int("inverter", 1, "inverter id")
 	metrics := flag.String("metrics", "KDY,KMT,KYR,KT0,TNF,TKK,PAC,PRL,IL1,IDC,UL1,UDC,SYS", "list of metric codes (comma separated)")
+	loglevel := flag.String("loglevel", "info", "info, warn, debug, trace")
 	flag.Parse()
+
+	s := &SolarMax{
+		uri:      net.JoinHostPort(*host, fmt.Sprintf("%d", *port)),
+		inverter: *inverter,
+	}
 
 	log.SetFormatter(&log.TextFormatter{
 		DisableColors: false,
 		FullTimestamp: true,
 	})
-	log.SetLevel(log.DebugLevel)
 
-	s := &SolarMax{
-		uri: net.JoinHostPort(*host, fmt.Sprintf("%d", *port)),
+	switch ll := strings.ToLower(*loglevel); ll {
+	case "warn":
+		log.SetLevel(log.WarnLevel)
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "trace":
+		log.SetLevel(log.TraceLevel)
+	default:
+		log.SetLevel(log.InfoLevel)
 	}
 
-	res, err := s.execCmd(smQuery(*metrics, *invId))
+	res, err := s.execCmd(smQuery(*metrics, *inverter))
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -104,9 +117,9 @@ func smQuery(metrics string, inverter int) string {
 	// Assure always a multiple of 4 metrics
 	cmdlen := len(cmdLst)
 	cmdoptlen := 4 * math.Ceil((float64(cmdlen) / float64(4)))
-	// Complete missing metrics by using the last one to get a multiple of 4
+	// Complete missing metrics by using the system status to get a multiple of 4
 	for i := 0; i < int(cmdoptlen)-cmdlen; i++ {
-		cmdLst = append(cmdLst, cmdLst[cmdlen-1])
+		cmdLst = append(cmdLst, "SYS")
 	}
 
 	query := strings.Join(cmdLst, ";")
@@ -151,6 +164,10 @@ func smDecode(raw string) (string, error) {
 		if key == "SYS" {
 			mdata[key] = fmt.Sprintf("%03d-", valint-20000) + statusdesc[valint]
 		}
+		// Solarmax unit timestamp
+		if key == "FDAT" {
+			mdata[key] = time.Unix(valint, 0)
+		}
 		// power of frequency reading, then  divide by 2...for some reason
 		valdiv2 := map[string]bool{
 			"PAC": true,
@@ -190,6 +207,11 @@ func smDecode(raw string) (string, error) {
 		}
 		keydesc := smMetricDesc()
 		log.Tracef("%d. %s value: %v", i+1, key+"-"+keydesc[key], mdata[key])
+
+		// stop decode loop when current key = next key (filled up to get a multiple of 4)
+		if nextkey := strings.Split(adata[i+1], "=")[0]; key == nextkey {
+			break
+		}
 
 	}
 	// Marshal sData into a JSON string.
