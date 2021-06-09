@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +23,7 @@ type SolarMax struct {
 
 func main() {
 
+	mode := flag.String("mode", "query", "query, loop, listmetrics")
 	host := flag.String("host", "127.0.0.1", "host/inverter ip address")
 	port := flag.Int("port", 80, "port number")
 	inverter := flag.Int("inverter", 1, "inverter id")
@@ -50,14 +52,21 @@ func main() {
 		log.SetLevel(log.InfoLevel)
 	}
 
-	res := s.execCmd(smQuery(*metrics, *inverter))
-
-	resj, err := smDecode(res)
-	if err != nil {
-		log.Fatal(err)
+	m := strings.ToLower(*mode)
+	log.Debugf("Mode: %s", m)
+	switch m {
+	case "listmetrics":
+		listMetrics()
+	case "loop":
+	default:
+		{
+			resj, err := smDecode(s.execCmd(smQuery(*metrics, *inverter)))
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println(resj)
+		}
 	}
-
-	fmt.Println(resj)
 }
 
 // execCmd executes an SolarMax command and provides the response
@@ -231,6 +240,19 @@ func smChksum(data string) int {
 		smChksum = smChksum + int(data[i])
 	}
 	return smChksum
+}
+
+// listMetrics prints all allowed metric codes
+func listMetrics() {
+	metriclist := smMetricDesc()
+	metrics := make([]string, 0, len(metriclist))
+	for m := range metriclist {
+		metrics = append(metrics, m)
+	}
+	sort.Strings(metrics)
+	for _, m := range metrics {
+		fmt.Printf("%s: %s\n", m, metriclist[m])
+	}
 }
 
 // smMetricDesc provides metric descriptions
@@ -420,7 +442,7 @@ func smStatus() map[int64]string {
 		// Custom errors to handle go errors
 		29997: "Inverter response read error",
 		29998: "Inverter network send timeout",
-		29999: "Inverter network i/o timeout",
+		29999: "Inverter network i/o timeout or not reachable",
 	}
 
 	return statusdesc
