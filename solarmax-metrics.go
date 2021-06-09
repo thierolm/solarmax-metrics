@@ -151,10 +151,10 @@ func smDecode(raw string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		// Default int 16 mapping of SolarMax response
+		// Default int 16 mapping of SolarMax response values
 		mdata[key] = valint
 
-		// value type dependend conversions
+		// metric type dependend conversions and description lookups
 		statusdesc := smStatus()
 		if key == "SYS" {
 			mdata[key] = fmt.Sprintf("%03d-", valint-20000) + statusdesc[valint]
@@ -162,6 +162,10 @@ func smDecode(raw string) (string, error) {
 		alarmdesc := smAlarm()
 		if key == "SAL" {
 			mdata[key] = fmt.Sprintf("%d-", valint) + alarmdesc[valint]
+		}
+		typedesc := smType()
+		if key == "TYP" {
+			mdata[key] = fmt.Sprintf("%d-", valint) + typedesc[valint]
 		}
 		// power of frequency reading, then  divide by 2...for some reason
 		valdiv2 := map[string]bool{
@@ -446,4 +450,30 @@ func smAlarm() map[int64]string {
 	}
 
 	return alarmdesc
+}
+
+// smType provides the inverters type desc
+func smType() map[int64]string {
+	typedesc := map[int64]string{
+		0:     "No Error",
+		1:     "External Fault 1",
+		2:     "Insulation fault DC side",
+		4:     "Earth fault current too large",
+		8:     "Fuse failure midpoint Earth",
+		16:    "External alarm 2",
+		32:    "Long-term temperature limit",
+		64:    "Error AC supply ",
+		128:   "External alarm 4",
+		256:   "Fan failure",
+		512:   "Fuse failure ",
+		1024:  "Failure temperature sensor",
+		2048:  "Alarm 12",
+		4096:  "Alarm 13",
+		8192:  "Alarm 14",
+		16384: "Alarm 15",
+		32768: "Alarm 16",
+		65536: "Alarm 17",
+	}
+
+	return typedesc
 }
