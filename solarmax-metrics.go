@@ -155,10 +155,13 @@ func smDecode(raw string) (string, error) {
 		mdata[key] = valint
 
 		// value type dependend conversions
-		// power of frequency reading, then  divide by 2...for some reason
 		statusdesc := smStatus()
 		if key == "SYS" {
 			mdata[key] = fmt.Sprintf("%03d-", valint-20000) + statusdesc[valint]
+		}
+		alarmdesc := smAlarm()
+		if key == "SAL" {
+			mdata[key] = fmt.Sprintf("%d-", valint) + alarmdesc[valint]
 		}
 		// power of frequency reading, then  divide by 2...for some reason
 		valdiv2 := map[string]bool{
@@ -417,4 +420,30 @@ func smStatus() map[int64]string {
 	}
 
 	return statusdesc
+}
+
+// smAlarm provides alarm descriptions
+func smAlarm() map[int64]string {
+	alarmdesc := map[int64]string{
+		0:     "No Error",
+		1:     "External Fault 1",
+		2:     "Insulation fault DC side",
+		4:     "Earth fault current too large",
+		8:     "Fuse failure midpoint Earth",
+		16:    "External alarm 2",
+		32:    "Long-term temperature limit",
+		64:    "Error AC supply ",
+		128:   "External alarm 4",
+		256:   "Fan failure",
+		512:   "Fuse failure ",
+		1024:  "Failure temperature sensor",
+		2048:  "Alarm 12",
+		4096:  "Alarm 13",
+		8192:  "Alarm 14",
+		16384: "Alarm 15",
+		32768: "Alarm 16",
+		65536: "Alarm 17",
+	}
+
+	return alarmdesc
 }
