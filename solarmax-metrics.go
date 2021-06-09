@@ -57,8 +57,7 @@ func main() {
 	switch m {
 	case "listmetrics":
 		listMetrics()
-	case "loop":
-	default:
+	case "query":
 		{
 			resj, err := smDecode(s.execCmd(smQuery(*metrics, *inverter)))
 			if err != nil {
@@ -66,6 +65,10 @@ func main() {
 			}
 			fmt.Println(resj)
 		}
+	case "loop":
+		log.Warnf("Mode %s will be implemeted soon", m)
+	default:
+		log.Warnf("Mode %s unknown", m)
 	}
 }
 
