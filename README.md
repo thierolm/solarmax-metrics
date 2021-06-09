@@ -1,6 +1,6 @@
 # solarmax-metrics
 
-This small piece of code contacts a SolarMAX inverter and provides its metrics in JSON.
+This small piece of code contacts a SolarMax S series inverter and provides its metrics in JSON.
 
 ## Usage
 
