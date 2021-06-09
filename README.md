@@ -14,6 +14,7 @@ pi@raspberrypi:~ $ solarmax-metrics -host=192.168.188.19 -port=26126
 
 Combined metric query with jq only using the inverters ip and port:
 (Default inverter id 1 will be used)
+
 ```bash
 pi@raspberrypi:~ $ solarmax-metrics -host=192.168.188.19 -port=26126 | jq
 {
