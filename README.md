@@ -9,67 +9,17 @@ Simple metric query only using the inverters ip and port:
 
 ```bash
 pi@raspberrypi:~ $ solarmax-metrics -host=192.168.188.19 -port=26126
-{"IDC":0.34,"IL1":0.38,"KDY":15.8,"KMT":129,"KT0":45685,"KYR":1721,"PAC":83,"PRL":1,"SYS":"008-Mains operation","TKK":32,"TNF":50.01,"UDC":3228,"UL1":229.8}
+{"IDC":{"Value":5.06,"Description":"DC Current (A)"},"IL1":{"Value":7.11,"Description":"AC Current Phase 1 (A)"},"KDY":{"Value":2.4,"Description":"Energy today (kWh)"},"KMT":{"Value":132,"Description":"Energy this month (kWh)"},"KT0":{"Value":45688,"Description":"Total Energy(kWh)"},"KYR":{"Value":1723,"Description":"Energy this year (kWh)"},"PAC":{"Value":1636,"Description":"AC Power (W)"},"PRL":{"Value":32,"Description":"Relative power (%)"},"SYS":{"Value":20008,"Description":"Mains operation"},"TKK":{"Value":44,"Description":"Inverter Temperature (C)"},"TNF":{"Value":50.03,"Description":"Generated Frequency (Hz)"},"UDC":{"Value":3412,"Description":"DC Voltage (V)"},"UL1":{"Value":230.7,"Description":"AC Voltage Phase 1 (V)"}}
 ```
 
 Combined metric query with [jq](https://wiki.ubuntuusers.de/jq/) only using the inverters ip and port:
 (Default inverter id 1 will be used)
 
 ```bash
-pi@raspberrypi:~ $ solarmax-metrics -host=192.168.188.19 -port=26126 | jq
+pi@raspberrypi:~ $ solarmax-metrics -host=192.168.188.19 -port=26126 | jq ".PAC"
 {
-  "IDC": {
-    "Value": 3.19,
-    "Description": "DC Current (A)"
-  },
-  "IL1": {
-    "Value": 4.57,
-    "Description": "AC Current Phase 1 (A)"
-  },
-  "KDY": {
-    "Value": 1.5,
-    "Description": "Energy today (kWh)"
-  },
-  "KMT": {
-    "Value": 131,
-    "Description": "Energy this month (kWh)"
-  },
-  "KT0": {
-    "Value": 45687,
-    "Description": "Total Energy(kWh)"
-  },
-  "KYR": {
-    "Value": 1723,
-    "Description": "Energy this year (kWh)"
-  },
-  "PAC": {
-    "Value": 1054,
-    "Description": "AC Power (W)"
-  },
-  "PRL": {
-    "Value": 21,
-    "Description": "Relative power (%)"
-  },
-  "SYS": {
-    "Value": 20008,
-    "Description": "Mains operation"
-  },
-  "TKK": {
-    "Value": 39,
-    "Description": "Inverter Temperature (C)"
-  },
-  "TNF": {
-    "Value": 50.03,
-    "Description": "Generated Frequency (Hz)"
-  },
-  "UDC": {
-    "Value": 3501,
-    "Description": "DC Voltage (V)"
-  },
-  "UL1": {
-    "Value": 231,
-    "Description": "AC Voltage Phase 1 (V)"
-  }
+  "Value": 1678,
+  "Description": "AC Power (W)"
 }
 ```
 
