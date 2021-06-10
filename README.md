@@ -5,7 +5,7 @@ This small piece of code contacts a SolarMax S series inverter (2000S, 3000S, 42
 ## Usage
 
 Simple metric query only using the inverters ip and port:  
-(Default inverter id 1 will be used)
+(Inverter id 1 will be used as default)
 
 ```bash
 pi@raspberrypi:~ $ solarmax-metrics -host=192.168.188.19 -port=26126
