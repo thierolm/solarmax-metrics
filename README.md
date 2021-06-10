@@ -4,7 +4,7 @@ This small piece of code contacts a SolarMax S series inverter (2000S, 3000S, 42
 
 ## Usage
 
-Simple metric query only using the inverters ip and port:
+Simple metric query only using the inverters ip and port:  
 (Default inverter id 1 will be used)
 
 ```bash
