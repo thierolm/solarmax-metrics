@@ -1,6 +1,6 @@
 # solarmax-metrics
 
-This small piece of code contacts a SolarMax S series inverter and provides its metrics in JSON.
+This small piece of code contacts a SolarMax S series inverter () and provides its metrics in JSON.
 
 ## Usage
 
@@ -9,7 +9,7 @@ Simple metric query only using the inverters ip and port:
 
 ```bash
 pi@raspberrypi:~ $ solarmax-metrics -host=192.168.188.19 -port=26126
-{"IDC":{"Value":5.06,"Description":"DC Current (A)"},"IL1":{"Value":7.11,"Description":"AC Current Phase 1 (A)"},"KDY":{"Value":2.4,"Description":"Energy today (kWh)"},"KMT":{"Value":132,"Description":"Energy this month (kWh)"},"KT0":{"Value":45688,"Description":"Total Energy(kWh)"},"KYR":{"Value":1723,"Description":"Energy this year (kWh)"},"PAC":{"Value":1636,"Description":"AC Power (W)"},"PRL":{"Value":32,"Description":"Relative power (%)"},"SYS":{"Value":20008,"Description":"Mains operation"},"TKK":{"Value":44,"Description":"Inverter Temperature (C)"},"TNF":{"Value":50.03,"Description":"Generated Frequency (Hz)"},"UDC":{"Value":3412,"Description":"DC Voltage (V)"},"UL1":{"Value":230.7,"Description":"AC Voltage Phase 1 (V)"}}
+{"IDC":{"Value":6.27,"Description":"DC Current (A)"},"IL1":{"Value":8.66,"Description":"AC Current Phase 1 (A)"},"KDY":{"Value":3.2,"Description":"Energy today (kWh)"},"KMT":{"Value":133,"Description":"Energy this month (kWh)"},"KT0":{"Value":45689,"Description":"Total Energy(kWh)"},"KYR":{"Value":1724,"Description":"Energy this year (kWh)"},"PAC":{"Value":2000,"Description":"AC Power (W)"},"PRL":{"Value":40,"Description":"Relative power (%)"},"SYS":{"Value":20008,"Description":"System Status: Mains operation"},"TKK":{"Value":47,"Description":"Inverter Temperature (C)"},"TNF":{"Value":50.01,"Description":"Generated Frequency (Hz)"},"TYP":{"Value":20030,"Description":"Type: SolarMax 4200S"},"UDC":{"Value":3343,"Description":"DC Voltage (V)"},"UL1":{"Value":231.3,"Description":"AC Voltage Phase 1 (V)"}}
 ```
 
 Combined metric query with [jq](https://wiki.ubuntuusers.de/jq/) only using the inverters ip and port:
