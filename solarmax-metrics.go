@@ -21,14 +21,6 @@ type SolarMax struct {
 	inverter int
 }
 
-type smMetricJson []struct {
-	Metric     string
-	Properties struct {
-		Value       interface{}
-		Description string
-	}
-}
-
 func main() {
 
 	mode := flag.String("mode", "query", "query, loop, listmetrics")
@@ -160,7 +152,13 @@ func smDecode(raw string) (string, error) {
 	adata := strings.Split(strings.Split(data, ":")[1], ";")
 
 	// jdata provides metric elements
-	jdata := make(smMetricJson, len(adata))
+
+	type metricprops struct {
+		Value       interface{}
+		Description string
+	}
+	var mprops metricprops
+	jdata := make(map[string]metricprops)
 	// edata provides metric elements (value, decription)
 	metricdesc := smMetricDesc()
 	statusdesc := smStatus()
@@ -205,31 +203,32 @@ func smDecode(raw string) (string, error) {
 			return "", err
 		}
 
-		jdata[i].Metric = key
 		// metric type dependend conversions and description lookups
 		switch key {
 		case "SYS":
-			jdata[i].Properties.Description = statusdesc[valint]
+			mprops.Description = statusdesc[valint]
 		case "SAL":
-			jdata[i].Properties.Description = alarmdesc[valint]
+			mprops.Description = alarmdesc[valint]
 		case "TYP":
-			jdata[i].Properties.Description = typedesc[valint]
+			mprops.Description = typedesc[valint]
 		default:
-			jdata[i].Properties.Description = metricdesc[key]
+			mprops.Description = metricdesc[key]
 		}
 
 		// Default int 16 mapping of SolarMax response values
-		jdata[i].Properties.Value = valint
+		mprops.Value = valint
 		switch {
 		case valdiv2[key]:
-			jdata[i].Properties.Value = float64(valint) / 2
+			mprops.Value = float64(valint) / 2
 		case valdiv10[key]:
-			jdata[i].Properties.Value = float64(valint) / 10
+			mprops.Value = float64(valint) / 10
 		case valdiv100[key]:
-			jdata[i].Properties.Value = float64(valint) / 100
+			mprops.Value = float64(valint) / 100
 		}
 
-		log.Tracef("%d. %s value: %v", i+1, key+"-"+metricdesc[key], jdata[i])
+		jdata[key] = mprops
+
+		log.Tracef("%d. %s value: %v", i+1, key+"-"+metricdesc[key], jdata[key])
 
 		// stop decode loop when current key = next key (filled up to get a multiple of 4)
 		if i+1 < len(adata) {
