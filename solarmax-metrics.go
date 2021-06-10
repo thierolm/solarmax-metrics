@@ -236,8 +236,8 @@ func smDecode(raw string) (string, error) {
 				break
 			}
 		}
-
 	}
+
 	// Marshal sData into a JSON string.
 	sData, err := json.Marshal(jdata)
 	if err != nil {
