@@ -27,7 +27,7 @@ func main() {
 	host := flag.String("host", "127.0.0.1", "host/inverter ip address")
 	port := flag.Int("port", 80, "port number")
 	inverter := flag.Int("inverter", 1, "inverter id")
-	metrics := flag.String("metrics", "KDY,KMT,KYR,KT0,TNF,TKK,PAC,PRL,IL1,IDC,UL1,UDC,SYS", "list of metric codes (comma separated)")
+	metrics := flag.String("metrics", "KDY,KMT,KYR,KT0,TNF,TKK,TYP,PAC,PRL,IL1,IDC,UL1,UDC,SYS", "list of metric codes (comma separated)")
 	loglevel := flag.String("loglevel", "info", "info, warn, debug, trace")
 	flag.Parse()
 
@@ -204,15 +204,15 @@ func smDecode(raw string) (string, error) {
 		}
 
 		// metric type dependend conversions and description lookups
+		mprops.Description = metricdesc[key]
 		switch key {
 		case "SYS":
-			mprops.Description = statusdesc[valint]
+			mprops.Description = mprops.Description + ": " + statusdesc[valint]
 		case "SAL":
-			mprops.Description = alarmdesc[valint]
+			mprops.Description = mprops.Description + ": " + alarmdesc[valint]
 		case "TYP":
-			mprops.Description = typedesc[valint]
+			mprops.Description = mprops.Description + ": " + typedesc[valint]
 		default:
-			mprops.Description = metricdesc[key]
 		}
 
 		// Default int 16 mapping of SolarMax response values
@@ -491,24 +491,10 @@ func smAlarm() map[int64]string {
 // smType provides the inverters type desc
 func smType() map[int64]string {
 	typedesc := map[int64]string{
-		0:     "No Error",
-		1:     "External Fault 1",
-		2:     "Insulation fault DC side",
-		4:     "Earth fault current too large",
-		8:     "Fuse failure midpoint Earth",
-		16:    "External alarm 2",
-		32:    "Long-term temperature limit",
-		64:    "Error AC supply ",
-		128:   "External alarm 4",
-		256:   "Fan failure",
-		512:   "Fuse failure ",
-		1024:  "Failure temperature sensor",
-		2048:  "Alarm 12",
-		4096:  "Alarm 13",
-		8192:  "Alarm 14",
-		16384: "Alarm 15",
-		32768: "Alarm 16",
-		65536: "Alarm 17",
+		20010: "SolarMax 2000S",
+		20020: "SolarMax 3000S",
+		20030: "SolarMax 4200S",
+		20040: "SolarMax 6000S",
 	}
 
 	return typedesc
