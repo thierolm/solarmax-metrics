@@ -18,7 +18,7 @@ linux: $(LINUX) ## Build for Linux
 darwin: $(DARWIN) ## Build for Darwin (macOS)
 
 $(WINDOWS):
-	GOOS=windows GOARCH=amd64 go build -v -o $(WINDOWS) -ldflags="-s -w -X $(EXECUTABLE).version=$(VERSION)"  ./$(EXECUTABLE).go
+	env GOOS=windows GOARCH=amd64 go build -v -o $(WINDOWS) -ldflags="-s -w -X $(EXECUTABLE).version=$(VERSION)"  ./$(EXECUTABLE).go
 
 $(LINUX):
 	env GOOS=linux GOARCH=amd64 go build -v -o $(LINUX) -ldflags="-s -w -X $(EXECUTABLE).version=$(VERSION)"  ./$(EXECUTABLE).go
