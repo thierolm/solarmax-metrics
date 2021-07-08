@@ -1,18 +1,33 @@
-.PHONY: default build run compile
+EXECUTABLE=solarmax-metrics
+WINDOWS=./bin/$(EXECUTABLE)_windows_amd64.exe
+LINUX=./bin/$(EXECUTABLE)_linux_amd64
+DARWIN=./bin/$(EXECUTABLE)_darwin_amd64
+VERSION=$(shell git describe --tags --always --long --dirty)
 
-build:
-	go build -o bin/solarmax-metrics solarmax-metrics.go
+.PHONY: all clean
 
-run:
-	go run solarmax-metrics.go -h
+all: build ## Build and run tests
 
-default:
-	build
+build: windows linux darwin ## Build binaries
+	@echo version: $(VERSION)
 
-compile:
-	echo "Compiling for every OS and Platform"
-	GOOS=windows GOARCH=386 go build -o bin/solarmax-metrics-win.exe solarmax-metrics.go
-	GOOS=linux GOARCH=amd64 go build -o bin/solarmax-metrics-linux-amd64 solarmax-metrics.go
-	GOOS=linux GOARCH=arm go build -o bin/solarmax-metrics-linux-arm solarmax-metrics.go
-	GOOS=linux GOARCH=arm64 go build -o bin/solarmax-metrics-linux-arm64 solarmax-metrics.go
-	GOOS=freebsd GOARCH=386 go build -o bin/solarmax-metrics-freebsd-386 solarmax-metrics.go	
+windows: $(WINDOWS) ## Build for Windows
+
+linux: $(LINUX) ## Build for Linux
+
+darwin: $(DARWIN) ## Build for Darwin (macOS)
+
+$(WINDOWS):
+	GOOS=windows GOARCH=amd64 go build -v -o $(WINDOWS) -ldflags="-s -w -X $(EXECUTABLE).version=$(VERSION)"  ./$(EXECUTABLE).go
+
+$(LINUX):
+	env GOOS=linux GOARCH=amd64 go build -v -o $(LINUX) -ldflags="-s -w -X $(EXECUTABLE).version=$(VERSION)"  ./$(EXECUTABLE).go
+
+$(DARWIN):
+	env GOOS=darwin GOARCH=amd64 go build -v -o $(DARWIN) -ldflags="-s -w -X $(EXECUTABLE).version=$(VERSION)"  ./$(EXECUTABLE).go
+
+clean: ## Remove previous build
+	rm -f $(WINDOWS) $(LINUX) $(DARWIN)
+
+help: ## Display available commands
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
